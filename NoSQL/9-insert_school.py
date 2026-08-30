@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Insert a document into a MongoDB collection."""
+"""This module introduces python NoSQL manipulation"""
 
 
 def insert_school(mongo_collection, **kwargs):
-    """Insert kwargs into mongo_collection and return its new ID."""
+    """function that inserts a new document in a collection based on kwargs"""
     result = mongo_collection.insert_one(kwargs)
     return result.inserted_id
