@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
-"""Display Nginx log statistic."""
-
+"""Display Nginx log statistics."""
 from pymongo import MongoClient
 
 
 if __name__ == "__main__":
-	collection = MongoClient("mongodb://127.0.0.1:27017").logs.nginx
+    client = MongoClient("mongodb://127.0.0.1:27017")
+    nginx = client.logs.nginx
 
-	print("{} logs".format(collection.count_documents({})))
-	print("Methods:")
+    print("{} logs".format(nginx.count_documents({})))
+    print("Methods:")
 
-	for method in ["GET", "POST", "PUT", "PATCH", "DELETE"]:
-		print("\tmethod {}: {}".format(
-			method,
-			collection.count_documents({"method": method})
-		))
+    for method in ["GET", "POST", "PUT", "PATCH", "DELETE"]:
+        print("\tmethod {}: {}".format(
+            method, nginx.count_documents({"method": method})
+        ))
 
-	status_filter = {"method": "GET", "path": "/status"}
-	print("{} status check".format(collection.count_documents(status_filter)))
+    print("{} status check".format(
+        nginx.count_documents({"method": "GET", "path": "/status"})
+    ))
