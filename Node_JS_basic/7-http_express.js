@@ -2,52 +2,61 @@ const express = require('express');
 const fs = require('fs');
 
 const app = express();
+const database = process.argv[2];
 
-function countStudents(path) {
+function getStudents() {
   return new Promise((resolve, reject) => {
-    fs.readFile(path, 'utf8', (err, data) => {
-      if (err) {
+    fs.readFile(database, 'utf-8', (error, data) => {
+      if (error) {
         reject(new Error('Cannot load the database'));
         return;
       }
 
-      const lines = data.split('\n').filter((line) => line.trim() !== '');
-      const students = lines.slice(1); // skip header
+      const students = data
+        .split('\n')
+        .slice(1)
+        .filter((line) => line.trim());
+
       const fields = {};
 
-      students.forEach((line) => {
-        const parts = line.split(',');
-        const firstName = parts[0];
-        const field = parts[3]; // CSV format: firstname,lastname,age,field
-        if (firstName && field) {
-          if (!fields[field]) fields[field] = [];
-          fields[field].push(firstName);
+      students.forEach((student) => {
+        const values = student.split(',');
+        const firstName = values[0];
+        const field = values[3];
+
+        if (!fields[field]) {
+          fields[field] = [];
         }
+
+        fields[field].push(firstName);
       });
 
-      let output = `Number of students: ${students.length}\n`;
-      for (const [field, list] of Object.entries(fields)) {
-        output += `Number of students in ${field}: ${list.length}. List: ${list.join(', ')}\n`;
-      }
+      let result = `Number of students: ${students.length}`;
 
-      resolve(output.trim());
+      Object.keys(fields).forEach((field) => {
+        const names = fields[field];
+        result += `\nNumber of students in ${field}: ${names.length}. List: ${names.join(', ')}`;
+      });
+
+      resolve(result);
     });
   });
 }
 
-app.get('/', (req, res) => {
-  res.send('Hello Holberton School!');
+app.get('/', (request, response) => {
+  response.type('text/plain');
+  response.send('Hello Holberton School!');
 });
 
-app.get('/students', (req, res) => {
-  const database = process.argv[2];
-  countStudents(database)
-    .then((report) => {
-      res.type('text/plain');
-      res.send(`This is the list of our students\n${report}`);
+app.get('/students', (request, response) => {
+  getStudents()
+    .then((students) => {
+      response.type('text/plain');
+      response.send(`This is the list of our students\n${students}`);
     })
-    .catch((err) => {
-      res.status(500).send(err.message);
+    .catch((error) => {
+      response.type('text/plain');
+      response.send(`This is the list of our students\n${error.message}`);
     });
 });
 

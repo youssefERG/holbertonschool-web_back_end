@@ -1,60 +1,67 @@
 const http = require('http');
 const fs = require('fs');
 
-function countStudents(path) {
+const database = process.argv[2];
+
+function getStudents() {
   return new Promise((resolve, reject) => {
-    fs.readFile(path, 'utf8', (err, data) => {
-      if (err) {
+    fs.readFile(database, 'utf-8', (error, data) => {
+      if (error) {
         reject(new Error('Cannot load the database'));
         return;
       }
 
-      const lines = data.split('\n').filter((line) => line.trim() !== '');
-      const students = lines.slice(1); // skip header
+      const students = data
+        .split('\n')
+        .slice(1)
+        .filter((line) => line.trim());
+
       const fields = {};
 
-      students.forEach((line) => {
-        const parts = line.split(',');
-        const firstName = parts[0];
-        const field = parts[3]; // CSV format: firstname,lastname,age,field
-        if (firstName && field) {
-          if (!fields[field]) fields[field] = [];
-          fields[field].push(firstName);
+      students.forEach((student) => {
+        const values = student.split(',');
+        const firstName = values[0];
+        const field = values[3];
+
+        if (!fields[field]) {
+          fields[field] = [];
         }
+
+        fields[field].push(firstName);
       });
 
-      let output = `Number of students: ${students.length}\n`;
-      for (const [field, list] of Object.entries(fields)) {
-        output += `Number of students in ${field}: ${list.length}. List: ${list.join(', ')}\n`;
-      }
+      let result = `Number of students: ${students.length}`;
 
-      resolve(output.trim());
+      Object.keys(fields).forEach((field) => {
+        const names = fields[field];
+        result += `\nNumber of students in ${field}: ${names.length}. List: ${names.join(', ')}`;
+      });
+
+      resolve(result);
     });
   });
 }
 
-const app = http.createServer((req, res) => {
-  res.setHeader('Content-Type', 'text/plain');
+const app = http.createServer((request, response) => {
+  response.writeHead(200, { 'Content-Type': 'text/plain' });
 
-  if (req.url === '/') {
-    res.statusCode = 200;
-    res.end('Hello Holberton School!');
-  } else if (req.url === '/students') {
-    const database = process.argv[2];
-    countStudents(database)
-      .then((report) => {
-        res.statusCode = 200;
-        res.end(`This is the list of our students\n${report}`);
+  if (request.url === '/') {
+    response.end('Hello Holberton School!');
+  } else if (request.url === '/students') {
+    response.write('This is the list of our students\n');
+
+    getStudents()
+      .then((students) => {
+        response.end(students);
       })
-      .catch((err) => {
-        res.statusCode = 500;
-        res.end(err.message);
+      .catch((error) => {
+        response.end(error.message);
       });
   } else {
-    res.statusCode = 404;
-    res.end('Not Found');
+    response.end('Hello Holberton School!');
   }
 });
 
 app.listen(1245);
+
 module.exports = app;
